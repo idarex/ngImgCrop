@@ -58,6 +58,10 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
     this._dontDragOutside();
   };
 
+  CropArea.prototype.setAspect = function (aspect) {
+    this._aspect = aspect;
+  }
+
   /* FUNCTIONS */
   CropArea.prototype._dontDragOutside=function() {
     var canvasH=this._ctx.canvas.height,
