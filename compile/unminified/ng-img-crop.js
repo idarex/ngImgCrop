@@ -1,11 +1,11 @@
 /*!
- * ngImgCrop v0.2.0
+ * ngImgCrop v0.2.1
  * https://github.com/alexk111/ngImgCrop
  *
  * Copyright (c) 2014 Alex Kaul
  * License: MIT
  *
- * Generated at Wednesday, August 13th, 2014, 3:36:21 PM
+ * Generated at Wednesday, August 13th, 2014, 3:56:32 PM
  */
 (function() {
 'use strict';
@@ -356,7 +356,6 @@ crop.factory('cropAreaRectangle', ['cropArea', function(CropArea) {
       }
     }
 
-    this._dontDragOutside();
     angular.element(this._ctx.canvas).css({'cursor': cursor});
 
     return res;
@@ -534,13 +533,12 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
 
   CropArea.prototype.setSize = function (size) {
 
-    this._size = this._processSize(size);
-    this._dontDragOutside();
+    size = this._processSize(size);
+    this._size = this._preventBoundaryCollision(size);
   };
 
   CropArea.prototype.getSouthEastBound = function () {
-    var s = this.getSize();
-    return {x: s.x + s.w, y: s.y + s.h};
+    return this._southEastBound(this.getSize());
   };
 
   CropArea.prototype.getMinSize = function () {
@@ -561,38 +559,68 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
   CropArea.prototype.setMinSize = function (size) {
     this._minSize = this._processSize(size);
     this.setSize(this._minSize);
-    this._dontDragOutside();
   };
 
   CropArea.prototype.setAspect = function (aspect) {
     this._aspect = aspect;
-    this.setSize(this._size);
   }
 
   /* FUNCTIONS */
-  CropArea.prototype._dontDragOutside=function() {
+  CropArea.prototype._preventBoundaryCollision=function(size) {
     var canvasH=this._ctx.canvas.height,
         canvasW=this._ctx.canvas.width;
 
-    var s = this.getSize();
-    var se = this.getSouthEastBound();
-    // copy size
-    var newSize = {x: s.x, y: s.y, w:s.w, h:s.h};
+    var nw = {x: size.x, y: size.y};
+    var se = this._southEastBound(size);
 
-    //check northwest corner
-    if(s.x<0) { newSize.x=0; }
-    if(s.y<0) { newSize.y=0; }
+    // check northwest corner
+    if(nw.x<0) { nw.x=0; }
+    if(nw.y<0) { nw.y=0; }
 
-    //check southeast corner
-    if(se.x>canvasW) { newSize.x=canvasW-s.w; }
-    if(se.y>canvasH) { newSize.y=canvasH-s.h; }
+    // check southeast corner
+    if(se.x>canvasW) { se.x = canvasW }
+    if(se.y>canvasH) { se.y = canvasH }
 
-    //check width / height
-    if(s.w>canvasW) { newSize.w=canvasW; }
-    if(s.h>canvasH) { newSize.h=canvasH; }
+    var newSize = {x: nw.x,
+                   y: nw.y,
+                   w: se.x - nw.x,
+                   h: se.y - nw.y};
 
-    this._size = newSize;
+    //check size (if < min, adjust nw corner)
+    if (newSize.w < this._minSize.w) {
+      newSize.w = this._minSize.w;
+      se = this._southEastBound(newSize);
+      //adjust se corner, if it's out of bounds
+      if(se.x>canvasW)
+      {
+        se.x = canvasW;
+        //adjust nw corner according to min width
+        nw.x = Math.max(se.x - canvasW, se.x - this._minSize.w);
+        newSize = {x: nw.x,
+                   y: nw.y,
+                   w: se.x - nw.x,
+                   h: se.y - nw.y};
+      }
+    }
 
+    if (newSize.h < this._minSize.h) {
+      newSize.h = this._minSize.h;
+      se = this._southEastBound(newSize);
+
+      if(se.y>canvasH)
+      {
+        se.y = canvasH;
+        //adjust nw corner according to min height
+        nw.y = Math.max(se.y - canvasH, se.y - this._minSize.h);
+        newSize = {x: nw.x,
+                   y: nw.y,
+                   w: se.x - nw.x,
+                   h: se.y - nw.y};
+      }
+
+    }
+
+    return newSize;
   };
 
   CropArea.prototype._drawArea=function() {};
@@ -601,15 +629,21 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
   {
     // make this polymorphic to accept a single floating point number
     // for square-like sizes (including circle)
-    if (typeof size == "number") {
+    if (typeof size == "number")
+    {
       size = {w: size, h: size};
     }
-    return {x: Math.max(this._minSize.x, size.x) || this._minSize.x,
-            y: Math.max(this._minSize.y, size.y) || this._minSize.y,
-            w: Math.max(this._minSize.w, size.w) || this._minSize.w,
-            h: Math.max(this._minSize.h, size.h) || this._minSize.h};
+
+    return {x: size.x || this._minSize.x,
+            y: size.y || this._minSize.y,
+            w: size.w || this._minSize.w,
+            h: size.h || this._minSize.h};
   }
 
+  CropArea.prototype._southEastBound=function(size)
+  {
+    return {x: size.x + size.w, y: size.y + size.h};
+  }
   CropArea.prototype.draw=function() {
     // draw crop area
     this._cropCanvas.drawCropArea(this._image,this.getCenterPoint(),this._size,this._drawArea);
