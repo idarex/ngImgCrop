@@ -87,9 +87,36 @@ crop.factory('cropAreaRectangle', ['cropArea', function(CropArea) {
     }
   };
 
+  CropAreaRectangle.prototype._sizeFromInputCorners = function (northWestCorner, southEastCorner) {
+    return {x: northWestCorner.x,
+            y: northWestCorner.y,
+            w: southEastCorner.x - northWestCorner.x,
+            h: southEastCorner.y - northWestCorner.y};
+  };
+
+  CropAreaRectangle.prototype._lockAspect = function (size, delta) {
+    if (this._aspect) {
+      console.log("-------------------------");
+      console.log("Delta:", delta);
+      console.log("Size", size);
+      if (Math.abs(delta.x) > Math.abs(delta.y)) {
+        console.log("Fit H");
+        size.h = size.w / this._aspect;
+      } else {
+        console.log("Fit W");
+        size.w = size.h * this._aspect;
+      }
+      console.log("Size", size);
+    }
+
+    return size;
+  };
+
   CropAreaRectangle.prototype.processMouseMove=function(mouseCurX, mouseCurY) {
     var cursor='default';
     var res=false;
+
+    var size;
 
     this._resizeCtrlIsHover = -1;
     this._areaIsHover = false;
@@ -106,22 +133,27 @@ crop.factory('cropAreaRectangle', ['cropArea', function(CropArea) {
       var se = this.getSouthEastBound();
       switch(this._resizeCtrlIsDragging) {
         case 0: // Top Left
-          this.setSizeByCorners({x: mouseCurX, y: mouseCurY}, {x: se.x, y: se.y});
+          size = this._sizeFromInputCorners({x: mouseCurX, y: mouseCurY}, {x: se.x, y: se.y});
           cursor = 'nwse-resize';
           break;
         case 1: // Top Right
-          this.setSizeByCorners({x: s.x, y: mouseCurY}, {x: mouseCurX, y: se.y});
+          size = this._sizeFromInputCorners({x: s.x, y: mouseCurY}, {x: mouseCurX, y: se.y});
           cursor = 'nesw-resize';
           break;
         case 2: // Bottom Left
-          this.setSizeByCorners({x: mouseCurX, y: s.y}, {x: se.x, y: mouseCurY});
+          size = this._sizeFromInputCorners({x: mouseCurX, y: s.y}, {x: se.x, y: mouseCurY});
           cursor = 'nesw-resize';
           break;
         case 3: // Bottom Right
-          this.setSizeByCorners({x: s.x, y: s.y}, {x: mouseCurX, y: mouseCurY});
+          size = this._sizeFromInputCorners({x: s.x, y: s.y}, {x: mouseCurX, y: mouseCurY});
           cursor = 'nwse-resize';
           break;
       }
+      size = this._lockAspect(size, {
+        x: mouseCurX - this._posResizeStartX,
+        y: mouseCurY - this._posResizeStartY
+      });
+      this.setSize(size);
 
       this._resizeCtrlIsHover = this._resizeCtrlIsDragging;
       res=true;

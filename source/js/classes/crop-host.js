@@ -249,6 +249,14 @@ crop.factory('cropHost', ['$document', 'cropAreaCircle', 'cropAreaSquare', 'crop
       }
     };
 
+    this.setAreaAspect=function(aspect) {
+      if (angular.isUndefined(aspect)) { return; }
+      if (aspect > 0) {
+        theArea.setAspect(aspect);
+        drawScene();
+      }
+    }
+
     this.getResultImageSize=function() {
       if (resImgSize == "selection")
       {

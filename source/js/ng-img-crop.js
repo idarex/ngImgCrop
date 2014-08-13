@@ -12,6 +12,7 @@ crop.directive('imgCrop', ['$timeout', 'cropHost', 'cropPubSub', function($timeo
       areaCoords: '=',
       areaType: '@',
       areaMinSize: '=',
+      areaAspect: '=',
       resultImageSize: '=',
 
       onChange: '&',
@@ -98,6 +99,10 @@ crop.directive('imgCrop', ['$timeout', 'cropHost', 'cropPubSub', function($timeo
       });
       scope.$watch('areaMinSize',function(){
         cropHost.setAreaMinSize(scope.areaMinSize);
+        updateResultImage(scope);
+      });
+      scope.$watch('areaAspect',function(){
+        cropHost.setAreaAspect(scope.areaAspect);
         updateResultImage(scope);
       });
       scope.$watch('resultImageSize',function(){
