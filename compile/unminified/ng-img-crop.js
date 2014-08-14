@@ -5,7 +5,7 @@
  * Copyright (c) 2014 Alex Kaul
  * License: MIT
  *
- * Generated at Wednesday, August 13th, 2014, 3:56:32 PM
+ * Generated at Thursday, August 14th, 2014, 11:46:31 AM
  */
 (function() {
 'use strict';
@@ -265,29 +265,29 @@ crop.factory('cropAreaRectangle', ['cropArea', function(CropArea) {
             h: southEastCorner.y - northWestCorner.y};
   };
 
-  CropAreaRectangle.prototype._lockAspect = function (size, delta) {
+  CropAreaRectangle.prototype._aspectPadding = function (northWestCorner, southEastCorner) {
+    var calcSize, padding =  {x: 0, y: 0},
+        w = southEastCorner.x - northWestCorner.x,
+        h = southEastCorner.y - northWestCorner.y;
     if (this._aspect) {
-      console.log("-------------------------");
-      console.log("Delta:", delta);
-      console.log("Size", size);
-      if (Math.abs(delta.x) > Math.abs(delta.y)) {
-        console.log("Fit H");
-        size.h = size.w / this._aspect;
+      if (h * this._aspect > w) {
+        // Width is too small
+        calcSize = h * this._aspect;
+        padding = { x: calcSize - w, y: 0};
       } else {
-        console.log("Fit W");
-        size.w = size.h * this._aspect;
+        // Height is too small
+        calcSize = w / this._aspect;
+        padding = {x: 0 , y: calcSize - h};
       }
-      console.log("Size", size);
     }
-
-    return size;
+    return padding;
   };
 
   CropAreaRectangle.prototype.processMouseMove=function(mouseCurX, mouseCurY) {
     var cursor='default';
     var res=false;
 
-    var size;
+    var padding, aspectedCorner, size;
 
     this._resizeCtrlIsHover = -1;
     this._areaIsHover = false;
@@ -304,26 +304,30 @@ crop.factory('cropAreaRectangle', ['cropArea', function(CropArea) {
       var se = this.getSouthEastBound();
       switch(this._resizeCtrlIsDragging) {
         case 0: // Top Left
-          size = this._sizeFromInputCorners({x: mouseCurX, y: mouseCurY}, {x: se.x, y: se.y});
+          padding = this._aspectPadding({x: mouseCurX, y: mouseCurY}, { x: se.x, y: se.y});
+          aspectedCorner = {x: mouseCurX - padding.x, y: mouseCurY - padding.y};
+          size = this._sizeFromInputCorners({x: aspectedCorner.x, y: aspectedCorner.y}, {x: se.x, y: se.y});
           cursor = 'nwse-resize';
           break;
         case 1: // Top Right
-          size = this._sizeFromInputCorners({x: s.x, y: mouseCurY}, {x: mouseCurX, y: se.y});
+          padding = this._aspectPadding({x: s.x, y: mouseCurY}, {x: mouseCurX, y: se.y});
+          aspectedCorner = {x: mouseCurX + padding.x, y: mouseCurY - padding.y};
+          size = this._sizeFromInputCorners({x: s.x, y: aspectedCorner.y}, {x: aspectedCorner.x, y: se.y});
           cursor = 'nesw-resize';
           break;
         case 2: // Bottom Left
-          size = this._sizeFromInputCorners({x: mouseCurX, y: s.y}, {x: se.x, y: mouseCurY});
+          padding = this._aspectPadding({x: mouseCurX, y: s.y}, {x: se.x, y: mouseCurY});
+          aspectedCorner = {x: mouseCurX - padding.x, y: mouseCurY + padding.y};
+          size = this._sizeFromInputCorners({x: aspectedCorner.x, y: s.y}, {x: se.x, y: aspectedCorner.y});
           cursor = 'nesw-resize';
           break;
         case 3: // Bottom Right
-          size = this._sizeFromInputCorners({x: s.x, y: s.y}, {x: mouseCurX, y: mouseCurY});
+          padding = this._aspectPadding({x: s.x, y: s.y}, {x: mouseCurX, y: mouseCurY});
+          aspectedCorner = {x: mouseCurX + padding.x, y: mouseCurY + padding.y};
+          size = this._sizeFromInputCorners({x: s.x, y: s.y}, {x: aspectedCorner.x, y: aspectedCorner.y});
           cursor = 'nwse-resize';
           break;
       }
-      size = this._lockAspect(size, {
-        x: mouseCurX - this._posResizeStartX,
-        y: mouseCurY - this._posResizeStartY
-      });
       this.setSize(size);
 
       this._resizeCtrlIsHover = this._resizeCtrlIsDragging;
@@ -567,6 +571,7 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
 
   /* FUNCTIONS */
   CropArea.prototype._preventBoundaryCollision=function(size) {
+    console.log("Stop Size:", size);
     var canvasH=this._ctx.canvas.height,
         canvasW=this._ctx.canvas.width;
 
@@ -581,8 +586,11 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
     if(se.x>canvasW) { se.x = canvasW }
     if(se.y>canvasH) { se.y = canvasH }
 
-    var newSize = {x: nw.x,
-                   y: nw.y,
+    var wShift = size.w - (se.x - nw.x)
+    var hShift = size.h - (se.y - nw.y)
+
+    var newSize = {x: nw.x - wShift,
+                   y: nw.y - hShift,
                    w: se.x - nw.x,
                    h: se.y - nw.y};
 
@@ -620,6 +628,7 @@ crop.factory('cropArea', ['cropCanvas', function(CropCanvas) {
 
     }
 
+    console.log("Start size:", newSize);
     return newSize;
   };
 
