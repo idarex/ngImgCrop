@@ -34,6 +34,13 @@ crop.directive('imgCrop', ['$timeout', 'cropHost', 'cropPubSub', function($timeo
 
       // Store Result Image to check if it's changed
       var storedResultImage;
+      if (scope.areaType=='fixed') {
+        var _minsize = {
+          w: 80,
+          h: scope.resultImageSize.h / (scope.resultImageSize.w / 80)
+        }
+        cropHost.setAreaMinSize(_minsize);
+      };
 
       var updateResultImage=function(scope) {
         var resultImageObj=cropHost.getResultImage();
@@ -92,10 +99,12 @@ crop.directive('imgCrop', ['$timeout', 'cropHost', 'cropPubSub', function($timeo
 
       // Sync CropHost with Directive's options
       scope.$watch('image',function(){
-        cropHost.setNewImageSource(scope.image);
+        cropHost.setNewImageSource(scope.image, scope.resultImageSize);
+        cropHost.getAreaType(scope.areaType);
       });
       scope.$watch('areaType',function(){
-        cropHost.setAreaType(scope.areaType);
+        cropHost.setAreaType(scope.areaType, scope.resultImageSize);
+        cropHost.getAreaType(scope.areaType);
         updateResultImage(scope);
       });
       scope.$watch('areaMinSize',function(){

@@ -16,3 +16,8 @@ img-crop canvas {
   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
   /* mobile webkit */
 }
+
+/* line 18, ../../source/scss/ng-img-crop.scss */
+.cropArea.dragenter {
+  background: #000;
+}

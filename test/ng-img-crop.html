@@ -21,8 +21,8 @@
       height:350px;
     }
     .cropArea.small {
-      width:300px;
-      height:200px;
+      width:400px;
+      height:400px;
     }
   </style>
 </head>
@@ -38,8 +38,11 @@
   </div>
   <div>
     Area type:
+    <label><input type="radio" ng-model="type" value="fixed" /> fixed</label>
     <label><input type="radio" ng-model="type" value="circle" /> Circle</label>
     <label><input type="radio" ng-model="type" value="square" /> Square</label>
+    <label><input type="radio" ng-model="type" value="rectangle" /> rectangle</label>
+    
     <!--<label><input type="radio" ng-model="type" value="rectangle" /> Rectangle</label>-->
   </div>
   <div>
@@ -78,13 +81,12 @@
   <div>
     <button ng-click="imageDataURI=''">Reset Image</button>
   </div>
-
   <div ng-if="enableCrop" class="cropArea" ng-class="{'big':size=='big', 'medium':size=='medium', 'small':size=='small'}">
     <img-crop image="imageDataURI"
               result-image="$parent.resImageDataURI"
-              change-on-fly="changeOnFly"
+              change-on-fly="true"
               area-type="{{type}}"
-              area-min-size="selMinSize"
+              area-coords="areaCoords"
               result-image-format="{{resImgFormat}}"
               result-image-quality="resImgQuality"
               result-image-size="resImgSize"
@@ -93,6 +95,7 @@
               on-load-done="onLoadDone()"
               on-load-error="onLoadError()"
     ></img-crop>
+    <!-- area-min-size="selMinSize"-->
               <!--aspect-ratio="aspectRatio"-->
   </div>
 
@@ -107,13 +110,16 @@
     angular.module('app', ['ngImgCrop'])
       .controller('Ctrl', function($scope) {
         $scope.size='small';
-        $scope.type='circle';
+        $scope.type='fixed';
         $scope.imageDataURI='';
         $scope.resImageDataURI='';
         $scope.resImgFormat='image/png';
         $scope.resImgQuality=1;
         $scope.selMinSize=100;
-        $scope.resImgSize=200;
+        $scope.resImgSize={
+          w: 592,
+          h: 326
+        };
         //$scope.aspectRatio=1.2;
         $scope.onChange=function($dataURI) {
           console.log('onChange fired');
@@ -127,6 +133,11 @@
         $scope.onLoadError=function() {
           console.log('onLoadError fired');
         };
+        var onDrop = function(e) {
+           e.preventDefault();
+           console.log('you have droped！！！');
+        }
+        angular.element(document).on('drop',onDrop);
         var handleFileSelect=function(evt) {
           var file=evt.currentTarget.files[0];
           var reader = new FileReader();
